@@ -2,9 +2,9 @@
 
 ## 1. Project Overview
 
-CampusGov is a simplified blockchain-based governance system designed for small communities such as campus organizations. The system allows an administrator to create proposals and enables participants to vote in a transparent and verifiable manner.
+CampusGov is a simplified blockchain-based governance system designed for small communities such as campus organizations. The system allows token holders to create proposals and enables participants to vote in a transparent and verifiable manner.
 
-This implementation represents the MVP described in Assignment 2, focusing on a one-address-one-vote mechanism while maintaining compatibility with future ERC20-based governance extensions.
+This implementation represents the MVP described in Assignment 2, focusing on a one-address-one-vote mechanism while introducing an ERC20 token threshold to prevent spam proposals, aligning with the project's decentralization goals.
 
 ---
 
@@ -14,17 +14,17 @@ This implementation represents the MVP described in Assignment 2, focusing on a 
 
 The `CampusGov.sol` contract implements the core governance logic:
 
-- Create proposals (admin only)
+- Create proposals (requires holding at least 100 CGOV tokens)
 - Vote (Yes / No)
 - Prevent double voting
-- Close proposals
+- Close proposals (anyone can close a proposal after its time duration ends)
 - Retrieve proposal details
 
 #### Key Features
 
-- Access control using `onlyOwner`
+- Token-gated proposal creation
 - Vote tracking via `hasVoted` mapping
-- Time-based voting period
+- Strict time-based voting period enforcement
 - Event logging for transparency
 
 ---
@@ -38,18 +38,17 @@ The `CGOVToken.sol` contract is a standard ERC20 token implemented using OpenZep
 - Initial supply minted to contract deployer
 - Owner can mint additional tokens
 
-This token is not directly used in the MVP voting logic but represents a future extension toward token-weighted governance.
-
+This token is integrated into the MVP to simulate stake-based engagement. Users must hold a minimum threshold of CGOV to submit a proposal.
 ---
 
 ## 3. Alignment with Assignment 2 White Paper
 
-The implementation directly reflects the design proposed in Assignment 2:
+The implementation directly reflects and improves upon the design proposed in Assignment 2:
 
-- MVP uses one-address-one-vote model
-- Governance logic is minimal and transparent
-- ERC20 token included as a future extension layer
-- Proposal lifecycle and voting flow match the system architecture described in the white paper
+- Removed centralized admin and introduced decentralization. Any user with sufficient CGOV balance can propose, and anyone can trigger the closure of an expired proposal.
+- Uses a one-address-one-vote model for the voting logic to maintain usability for small communities(Implemented via the hasVoted mapping in CampusGov.sol).
+- ERC20 token is actively used as an proposal threshold, successfully linking the token model with the governance workflow.It's enforced by the proposalThreshold variable. Users must hold at least 100 CGOV to call createProposal().
+- Proposal lifecycle and voting flow match the system architecture described in the white paper.
 
 ---
 
@@ -62,9 +61,11 @@ The implementation directly reflects the design proposed in Assignment 2:
 
 ---
 
-## 5. Installation
+## 5. Installation & Setup
 
 Install dependencies:
 
 ```bash
 npm install
+npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox @nomicfoundation/hardhat-network-helpers
+npm install @openzeppelin/contracts
