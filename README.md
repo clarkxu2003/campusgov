@@ -69,3 +69,27 @@ Install dependencies:
 npm install
 npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox @nomicfoundation/hardhat-network-helpers
 npm install @openzeppelin/contracts
+```
+## 6. Unit Testing
+To execute the unit test suite, run the following command:
+
+```bash
+npx hardhat test
+```
+Our test suite achieves comprehensive coverage of the core logic and failure.
+
+### 6.1 CGOVToken (Token Contract)
+
+Tests validate standard ERC20 functionality and strict access controls:
+
+- Validates token name, symbol, and that the initial supply (1,000,000 CGOV) is correctly assigned to the deployer.
+- Verifies standard ERC20 token transfer functionality between accounts.
+- Confirms via positive and negative testing that only the contract Owner can mint new tokens, successfully reverting any unauthorized minting attempts.
+
+### 6.2 CampusGov (Governance Contract)
+
+Tests fully cover:
+
+- Tests the normal creation flow and includes strict negative testing to revert invalid inputs (e.g., insufficient token balance, empty description, zero duration).
+- Tests "Yes" and "No" votes are recorded accurately. Verifies anti-spam mechanisms by reverting double-voting attempts from the same address, and blocks votes on non-existent proposals.
+- Automatically rejects new votes after the deadline, allowing any user to trigger the closure.Includes edge-case defenses to prevent "double-closing" an already settled proposal.
