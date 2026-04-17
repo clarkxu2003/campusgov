@@ -1,9 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract CampusGov {
     address public owner;
     uint256 public proposalCount;
+    
+    IERC20 public cgovToken;
+    uint256 public proposalThreshold = 100 * 10**18; 
 
     struct Proposal {
         uint256 id;
@@ -39,11 +44,6 @@ contract CampusGov {
         uint256 noVotes
     );
 
-    modifier onlyOwner() {
-        require(msg.sender == owner, "Only owner can perform this action");
-        _;
-    }
-
     modifier proposalExists(uint256 _proposalId) {
         require(
             _proposalId > 0 && _proposalId <= proposalCount,
@@ -52,14 +52,16 @@ contract CampusGov {
         _;
     }
 
-    constructor() {
+    constructor(address _tokenAddress) {
         owner = msg.sender;
+        cgovToken = IERC20(_tokenAddress);
     }
 
     function createProposal(
         string memory _description,
         uint256 _durationInMinutes
-    ) external onlyOwner {
+    ) external {
+        require(cgovToken.balanceOf(msg.sender) >= proposalThreshold, "Insufficient CGOV to propose");
         require(bytes(_description).length > 0, "Description cannot be empty");
         require(_durationInMinutes > 0, "Duration must be greater than zero");
 
@@ -108,12 +110,12 @@ contract CampusGov {
 
     function closeProposal(uint256 _proposalId)
         external
-        onlyOwner
         proposalExists(_proposalId)
     {
         Proposal storage proposal = proposals[_proposalId];
 
         require(!proposal.isClosed, "Proposal is already closed");
+        require(block.timestamp > proposal.endTime, "Voting period has not ended yet");
 
         proposal.isClosed = true;
 
