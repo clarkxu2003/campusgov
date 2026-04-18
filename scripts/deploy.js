@@ -4,21 +4,27 @@ async function main() {
   const [deployer] = await hre.ethers.getSigners();
   console.log("Deploying contracts with account:", deployer.address);
 
-  const initialSupply = hre.ethers.parseUnits("1000000", 18);
-
   const CGOVToken = await hre.ethers.getContractFactory("CGOVToken");
-  const cgovToken = await CGOVToken.deploy(initialSupply);
-  await cgovToken.waitForDeployment();
+  const initialSupply = hre.ethers.parseUnits("1000000", 18);
+  const token = await CGOVToken.deploy(initialSupply);
+  await token.waitForDeployment();
 
-  const tokenAddress = await cgovToken.getAddress();
+  const tokenAddress = await token.getAddress();
   console.log("CGOVToken deployed to:", tokenAddress);
 
-  const CampusGov = await hre.ethers.getContractFactory("CampusGov");
-  const campusGov = await CampusGov.deploy(tokenAddress);
-  await campusGov.waitForDeployment();
+  // bump nonce once so CampusGov gets a different address
+  const bumpTx = await deployer.sendTransaction({
+    to: deployer.address,
+    value: 0n,
+  });
+  await bumpTx.wait();
 
-  const campusGovAddress = await campusGov.getAddress();
-  console.log("CampusGov deployed to:", campusGovAddress);
+  const CampusGov = await hre.ethers.getContractFactory("CampusGov");
+  const gov = await CampusGov.deploy(tokenAddress);
+  await gov.waitForDeployment();
+
+  const govAddress = await gov.getAddress();
+  console.log("CampusGov deployed to:", govAddress);
 }
 
 main().catch((error) => {

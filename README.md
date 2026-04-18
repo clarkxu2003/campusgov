@@ -1,4 +1,4 @@
-# CampusGov – Assignment 3 Implementation
+# CampusGov – 571G Project Implementation
 
 ## Overview
 
@@ -10,7 +10,7 @@ Current implementation:
 - voting is one-address-one-vote
 - users can vote Yes / No
 - proposals can be closed after the voting period ends
-- frontend supports wallet connection and contract interaction
+- frontend supports wallet connection and governance state display
 
 ---
 
@@ -122,21 +122,155 @@ Add the local Hardhat network in MetaMask:
 
 Then import a Hardhat test account from the `npx hardhat node` output.
 
-Recommended: use **Account #0**, because it has test ETH and receives the initial CGOV token supply after deployment.
+Recommended: use a Hardhat test account for frontend display only.
 
 ---
 
 ## How to Use (IMPORTANT)
 
-1. Start `npx hardhat node`
-2. Deploy contracts with `npx hardhat run scripts/deploy.js --network localhost`
-3. Update `frontend/src/config.js` with the latest deployed addresses
-4. Start the frontend with `npm run dev`
-5. Open the frontend in the browser
-6. Connect MetaMask
-7. Create a proposal if your wallet holds enough CGOV
-8. Vote Yes / No on active proposals
-9. Close a proposal after the deadline
+For this localhost demo, the frontend is used mainly to **display blockchain state**, while **Hardhat console is used for all write actions**.
+
+This workflow is used because MetaMask may block localhost contract transactions during testing.
+
+### Step 1 – Start all services
+
+Terminal 1:
+
+```bash
+npx hardhat node
+```
+
+Terminal 2:
+
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+Terminal 3:
+
+```bash
+cd frontend
+npm run dev
+```
+
+### Step 2 – Update frontend config
+
+After deployment, update `frontend/src/config.js` with the latest contract addresses.
+
+### Step 3 – Open the frontend
+
+Open the frontend in the browser and click **Connect Wallet**.
+
+The frontend should show:
+
+- connected account
+- CGOV balance
+- total number of proposals
+- proposal descriptions
+- creator addresses
+- start and end time
+- yes / no votes
+- current proposal status
+
+### Step 4 – Important localhost demo note
+
+For this localhost demo setup:
+
+- **frontend = display only**
+- **Hardhat console = create / vote / close**
+
+Do **not** rely on the frontend buttons for create / vote / close during the localhost demo.
+
+### Step 5 – Open Hardhat console
+
+In a new terminal from the project root:
+
+```bash
+npx hardhat console --network localhost
+```
+
+### Step 6 – Load signers and contracts
+
+Run these commands one line at a time:
+
+```javascript
+const [s0, s1, s2] = await ethers.getSigners()
+const token = await ethers.getContractAt("CGOVToken", "YOUR_CGOVTOKEN_ADDRESS", s0)
+const gov0 = await ethers.getContractAt("CampusGov", "YOUR_CAMPUSGOV_ADDRESS", s0)
+const gov1 = await ethers.getContractAt("CampusGov", "YOUR_CAMPUSGOV_ADDRESS", s1)
+const gov2 = await ethers.getContractAt("CampusGov", "YOUR_CAMPUSGOV_ADDRESS", s2)
+```
+
+### Step 7 – Transfer CGOV to demo accounts
+
+Transfer some CGOV from the deployer to other accounts for testing proposal creation and voting:
+
+```javascript
+let tx = await token.transfer(s1.address, ethers.parseUnits("200", 18))
+await tx.wait()
+
+tx = await token.transfer(s2.address, ethers.parseUnits("200", 18))
+await tx.wait()
+```
+
+Optional balance check:
+
+```javascript
+await token.balanceOf(s1.address)
+await token.balanceOf(s2.address)
+```
+
+### Step 8 – Create a proposal in Hardhat console
+
+Use account `s1` to create a proposal:
+
+```javascript
+tx = await gov1.createProposal("Demo proposal for frontend verification", 5)
+await tx.wait()
+```
+
+Then check the proposal count:
+
+```javascript
+await gov1.proposalCount()
+```
+
+### Step 9 – Refresh the frontend
+
+Go back to the frontend and click **Refresh Data** or wait for the automatic refresh.
+
+The new proposal should now appear in the proposal list.
+
+### Step 10 – Vote in Hardhat console
+
+Example: account `s2` votes **Yes** on proposal `3`:
+
+```javascript
+tx = await gov2.vote(3, true)
+await tx.wait()
+```
+
+Example: account `s0` votes **No** on proposal `3`:
+
+```javascript
+tx = await gov0.vote(3, false)
+await tx.wait()
+```
+
+### Step 11 – Refresh the frontend again
+
+After voting, refresh the frontend and verify that the vote counts are updated.
+
+### Step 12 – Close the proposal after expiration
+
+Once the voting period ends, close the proposal:
+
+```javascript
+tx = await gov1.closeProposal(3)
+await tx.wait()
+```
+
+Refresh the frontend again and verify that the proposal status changes to **Closed**.
 
 ---
 
@@ -146,7 +280,98 @@ Recommended: use **Account #0**, because it has test ETH and receives the initia
 - After every redeploy, update `frontend/src/config.js`
 - If contract interaction fails, make sure:
   - `hardhat node` is still running
-  - MetaMask is connected to `Hardhat Localhost`
-  - MetaMask is using the correct Hardhat account
   - ABI files were copied from the latest compilation output
   - `config.js` contains the latest deployed addresses
+- In this localhost demo setup:
+  - **frontend = display only**
+  - **Hardhat console = create / vote / close**
+- This avoids MetaMask localhost transaction issues while still demonstrating the full governance workflow
+
+---
+
+## Quick Command Summary
+
+### Start local node
+
+```bash
+npx hardhat node
+```
+
+### Deploy contracts
+
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+### Start frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+### Open Hardhat console
+
+```bash
+npx hardhat console --network localhost
+```
+
+### Load objects
+
+```javascript
+const [s0, s1, s2] = await ethers.getSigners()
+const token = await ethers.getContractAt("CGOVToken", "YOUR_CGOVTOKEN_ADDRESS", s0)
+const gov0 = await ethers.getContractAt("CampusGov", "YOUR_CAMPUSGOV_ADDRESS", s0)
+const gov1 = await ethers.getContractAt("CampusGov", "YOUR_CAMPUSGOV_ADDRESS", s1)
+const gov2 = await ethers.getContractAt("CampusGov", "YOUR_CAMPUSGOV_ADDRESS", s2)
+```
+
+### Transfer tokens
+
+```javascript
+let tx = await token.transfer(s1.address, ethers.parseUnits("200", 18))
+await tx.wait()
+
+tx = await token.transfer(s2.address, ethers.parseUnits("200", 18))
+await tx.wait()
+```
+
+### Create proposal
+
+```javascript
+tx = await gov1.createProposal("Demo proposal for frontend verification", 5)
+await tx.wait()
+```
+
+### Vote yes
+
+```javascript
+tx = await gov2.vote(3, true)
+await tx.wait()
+```
+
+### Vote no
+
+```javascript
+tx = await gov0.vote(3, false)
+await tx.wait()
+```
+
+### Close proposal
+
+```javascript
+tx = await gov1.closeProposal(3)
+await tx.wait()
+```
+
+---
+
+## Summary
+
+For this project localhost demo:
+
+- **Hardhat node** runs the blockchain
+- **Hardhat console** performs all write actions
+- **Frontend** displays live governance state
+
+This gives a stable and clear demo workflow for local testing and presentation.
